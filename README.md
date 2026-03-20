@@ -99,8 +99,8 @@ Release rules:
 To cut the first stable release:
 
 ```bash
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 The release workflow will:
