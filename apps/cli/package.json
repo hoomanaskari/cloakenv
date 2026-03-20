@@ -1,0 +1,29 @@
+{
+  "name": "@cloakenv/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "mkdir -p dist && bun build ./src/index.ts --target bun --outfile ./dist/index.js",
+    "build:standalone:darwin-arm64": "mkdir -p dist/bin && bun build ./src/index.ts --compile --target bun-darwin-arm64 --outfile ./dist/bin/cloakenv-darwin-arm64",
+    "build:standalone:darwin-x64": "mkdir -p dist/bin && bun build ./src/index.ts --compile --target bun-darwin-x64 --outfile ./dist/bin/cloakenv-darwin-x64",
+    "build:standalone:linux-x64": "mkdir -p dist/bin && bun build ./src/index.ts --compile --target bun-linux-x64 --outfile ./dist/bin/cloakenv-linux-x64",
+    "build:standalone:windows-x64": "mkdir -p dist/bin && bun build ./src/index.ts --compile --target bun-windows-x64 --outfile ./dist/bin/cloakenv-windows-x64.exe"
+  },
+  "bin": {
+    "cloakenv": "./dist/index.js"
+  },
+  "dependencies": {
+    "@cloakenv/core": "workspace:*",
+    "commander": "^13.0.0",
+    "chalk": "^5.4.0",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sensitivity-high: oklch(0.65 0.2 25);
+  --color-sensitivity-medium: oklch(0.75 0.15 70);
+  --color-sensitivity-low: oklch(0.7 0.15 145);
+  --color-sensitivity-public: oklch(0.65 0.1 250);
+  --font-sans:
+    "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.78rem;
+  --window-radius: 14px;
+  --overlay-scrim: oklch(1 0 0 / 0.7);
+  --background: oklch(0.976 0.003 264);
+  --foreground: oklch(0.23 0.01 264);
+  --card: oklch(0.995 0.002 264);
+  --card-foreground: oklch(0.23 0.01 264);
+  --popover: oklch(0.995 0.002 264);
+  --popover-foreground: oklch(0.23 0.01 264);
+  --primary: oklch(0.24 0.012 264);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.948 0.004 264);
+  --secondary-foreground: oklch(0.25 0.01 264);
+  --muted: oklch(0.952 0.004 264);
+  --muted-foreground: oklch(0.53 0.01 264);
+  --accent: oklch(0.944 0.005 264);
+  --accent-foreground: oklch(0.23 0.01 264);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.87 0.005 264);
+  --input: oklch(0.882 0.005 264);
+  --ring: oklch(0.64 0.02 255);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.962 0.004 264);
+  --sidebar-foreground: oklch(0.23 0.01 264);
+  --sidebar-primary: oklch(0.24 0.012 264);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.934 0.005 264);
+  --sidebar-accent-foreground: oklch(0.23 0.01 264);
+  --sidebar-border: oklch(0.87 0.005 264);
+  --sidebar-ring: oklch(0.64 0.02 255);
+}
+
+.dark {
+  color-scheme: dark;
+  --overlay-scrim: oklch(0 0 0 / 0.72);
+  --background: oklch(0.19 0.008 264);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.225 0.008 264);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.225 0.008 264);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.24 0.012 264);
+  --secondary: oklch(0.28 0.008 264);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.29 0.008 264);
+  --muted-foreground: oklch(0.73 0.008 264);
+  --accent: oklch(0.29 0.008 264);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --border: oklch(0.345 0.01 264);
+  --input: oklch(0.33 0.009 264);
+  --ring: oklch(0.55 0.02 255);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.985 0 0);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.21 0.008 264);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.28 0.008 264);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.345 0.01 264);
+  --sidebar-ring: oklch(0.55 0.02 255);
+}
+
+@layer base {
+  html {
+    background: transparent;
+    border-radius: var(--window-radius);
+    overflow: hidden;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply min-h-screen text-foreground antialiased;
+    background: transparent;
+    border-radius: inherit;
+    font-family: var(--font-sans);
+    letter-spacing: -0.011em;
+    overflow: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow: hidden;
+    border-radius: inherit;
+    background: var(--background);
+  }
+}
+
+@layer components {
+  .window-overlay-frame {
+    border-radius: var(--window-radius);
+  }
+
+  .window-overlay-surface {
+    border-radius: var(--window-radius);
+  }
+
+  .window-overlay-surface-right {
+    border-top-right-radius: var(--window-radius);
+    border-bottom-right-radius: var(--window-radius);
+  }
+
+  .window-overlay-surface-left {
+    border-top-left-radius: var(--window-radius);
+    border-bottom-left-radius: var(--window-radius);
+  }
+
+  .window-overlay-surface-top {
+    border-top-left-radius: var(--window-radius);
+    border-top-right-radius: var(--window-radius);
+  }
+
+  .window-overlay-surface-bottom {
+    border-bottom-left-radius: var(--window-radius);
+    border-bottom-right-radius: var(--window-radius);
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "../../",
+    "composite": true
+  },
+  "references": [{ "path": "../../packages/core" }],
+  "include": [
+    "src/**/*.ts",
+    "../../src/bun/approval-broker.ts",
+    "../../src/bun/handlers.ts",
+    "../../src/shared/**/*.ts"
+  ],
+  "exclude": ["tests", "dist", "node_modules"]
+}

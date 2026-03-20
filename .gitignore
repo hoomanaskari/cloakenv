@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Bun lockfile (binary)
+bun.lockb
+
+# Test coverage
+coverage/
+*.lcov
+
+# Environment / secrets
+.env
+.env.*
+!.env.schema
+!.env.example
+
+# CloakEnv vault (never commit the actual vault)
+vault.db
+vault.db-wal
+vault.db-shm
+*.cloaked
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vite
+apps/web/dist/
+artifacts/
+
+PRD.md
+build
+
+.claude
