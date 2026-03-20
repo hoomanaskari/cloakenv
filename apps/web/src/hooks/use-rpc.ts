@@ -20,6 +20,7 @@ import type {
 import { Electroview } from "electrobun/view";
 import { useSyncExternalStore } from "react";
 import {
+  DESKTOP_EVENT_APP_UPDATE_STATUS_CHANGED,
   DESKTOP_EVENT_NEW_PROJECT,
   DESKTOP_EVENT_OPEN_PREFERENCES,
   DESKTOP_EVENT_OPEN_TOOLS,
@@ -206,6 +207,15 @@ function initRPC(): VaultRPC | null {
         requests: {},
         messages: {
           showToast: () => {},
+          appUpdateStatusChanged: (payload) => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent(DESKTOP_EVENT_APP_UPDATE_STATUS_CHANGED, {
+                  detail: payload,
+                }),
+              );
+            }
+          },
           openPreferences: () => {
             if (typeof window !== "undefined") {
               window.dispatchEvent(new CustomEvent(DESKTOP_EVENT_OPEN_PREFERENCES));

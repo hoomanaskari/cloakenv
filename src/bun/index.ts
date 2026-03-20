@@ -23,14 +23,18 @@ let suppressMainWindowRestoreUntilBlur = false;
 let lastKnownMacFrontmostState = false;
 let providerServer: Server | null = null;
 let quitApplicationPromise: Promise<void> | null = null;
+let openUpdatePreferencesOnNextShow = false;
 
 type MainWindowMenuMessage = "openPreferences" | "openTools" | "openTraces" | "newProject";
 
-function sendMainWindowMenuMessage(message: MainWindowMenuMessage): void {
-  const window = showMainWindow();
+function dispatchMainWindowMenuMessage(
+  window: BrowserWindow,
+  message: MainWindowMenuMessage,
+): void {
   const bridge = window.webview.rpc as
     | {
         send?: {
+          appUpdateStatusChanged?: (payload: import("../shared/types").AppUpdateStatusInfo) => void;
           openPreferences?: (payload?: undefined) => void;
           openTools?: (payload?: undefined) => void;
           openTraces?: (payload?: undefined) => void;
@@ -59,6 +63,28 @@ function sendMainWindowMenuMessage(message: MainWindowMenuMessage): void {
   }
 
   bridge.send.newProject?.();
+}
+
+function sendMainWindowMenuMessage(message: MainWindowMenuMessage): void {
+  dispatchMainWindowMenuMessage(showMainWindow(), message);
+}
+
+function sendAppUpdateStatusToMainWindow(
+  nextStatus: import("../shared/types").AppUpdateStatusInfo,
+): void {
+  if (!mainWindow) {
+    return;
+  }
+
+  const bridge = mainWindow.webview.rpc as
+    | {
+        send?: {
+          appUpdateStatusChanged?: (payload: import("../shared/types").AppUpdateStatusInfo) => void;
+        };
+      }
+    | undefined;
+
+  bridge?.send?.appUpdateStatusChanged?.(nextStatus);
 }
 
 function buildTrayMenu() {
@@ -157,6 +183,10 @@ const handlers = createVaultHandlers({
   showNativeNotification: Utils.showNotification,
 });
 const appUpdater = createAppUpdater({
+  onStatusChanged: sendAppUpdateStatusToMainWindow,
+  onUpdateReady: () => {
+    openUpdatePreferencesOnNextShow = true;
+  },
   showNativeNotification: Utils.showNotification,
 });
 
@@ -636,6 +666,12 @@ function showMainWindow(): BrowserWindow {
 
   window.show();
   window.focus();
+
+  if (openUpdatePreferencesOnNextShow) {
+    openUpdatePreferencesOnNextShow = false;
+    dispatchMainWindowMenuMessage(window, "openPreferences");
+  }
+
   return window;
 }
 
@@ -822,7 +858,11 @@ function startMacWindowRestoreMonitor(): void {
     }
 
     try {
-      showMainWindow();
+      const window = showMainWindow();
+      if (openUpdatePreferencesOnNextShow) {
+        openUpdatePreferencesOnNextShow = false;
+        dispatchMainWindowMenuMessage(window, "openPreferences");
+      }
     } catch (error) {
       console.warn("[CloakEnv] Failed to restore main window after app activation:", error);
     }

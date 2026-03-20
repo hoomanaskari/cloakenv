@@ -300,6 +300,7 @@ export interface CloakEnvRPCSchema extends ElectrobunRPCSchema {
       vaultStatusChanged: { locked: boolean };
       secretsUpdated: { projectId: string };
       backupCompleted: { path: string };
+      appUpdateStatusChanged: AppUpdateStatusInfo;
       openPreferences: undefined;
       openTools: undefined;
       openTraces: undefined;

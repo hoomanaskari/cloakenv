@@ -10,6 +10,8 @@ interface NativeNotificationPayload {
 
 interface AppUpdaterOptions {
   showNativeNotification?: (notification: NativeNotificationPayload) => void;
+  onStatusChanged?: (status: AppUpdateStatusInfo) => void;
+  onUpdateReady?: () => void;
 }
 
 const DOWNLOAD_ACTIVE_STATUSES = new Set<UpdateStatusType>([
@@ -106,6 +108,7 @@ export function createAppUpdater(options: AppUpdaterOptions = {}) {
 
   function setStatus(patch: Partial<AppUpdateStatusInfo>): void {
     Object.assign(status, patch);
+    options.onStatusChanged?.(snapshot());
   }
 
   function showNotification(payload: NativeNotificationPayload): void {
@@ -151,6 +154,7 @@ export function createAppUpdater(options: AppUpdaterOptions = {}) {
 
       if (!readyNotificationSent) {
         readyNotificationSent = true;
+        options.onUpdateReady?.();
         showNotification({
           title: "CloakEnv update ready",
           body: "Restart the app from Preferences to install the downloaded update.",
@@ -406,6 +410,13 @@ export function createAppUpdater(options: AppUpdaterOptions = {}) {
 
     if (!status.updateAvailable && !status.updateReady) {
       await checkForUpdates({ downloadIfAvailable: false, userInitiated: false });
+    }
+
+    if (!status.updateReady) {
+      setStatus({
+        downloading: true,
+        error: null,
+      });
     }
 
     void startDownload(true);

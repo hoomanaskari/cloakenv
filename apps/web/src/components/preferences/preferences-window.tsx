@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { type CliInstallStatusInfo, useRPC } from "@/hooks/use-rpc";
+import { DESKTOP_EVENT_APP_UPDATE_STATUS_CHANGED } from "@/lib/desktop-events";
 import { type ThemePreference, useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -115,6 +116,21 @@ export function PreferencesSurface({ className }: { className?: string }) {
 
     return () => clearInterval(timer);
   }, [appUpdateStatus, loadAppUpdateStatus, rpc]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleStatusChanged = (event: Event) => {
+      const nextStatus = (event as CustomEvent<AppUpdateStatusInfo>).detail;
+      setAppUpdateStatus(nextStatus);
+    };
+
+    window.addEventListener(DESKTOP_EVENT_APP_UPDATE_STATUS_CHANGED, handleStatusChanged);
+    return () =>
+      window.removeEventListener(DESKTOP_EVENT_APP_UPDATE_STATUS_CHANGED, handleStatusChanged);
+  }, []);
 
   const withBusy = useCallback(async (task: () => Promise<void>) => {
     try {
@@ -288,6 +304,16 @@ export function PreferencesSurface({ className }: { className?: string }) {
     }
 
     await withBusy(async () => {
+      setAppUpdateStatus((current) =>
+        current
+          ? {
+              ...current,
+              downloading: true,
+              error: null,
+              lastStatusMessage: "Downloading the latest release...",
+            }
+          : current,
+      );
       const status = await rpc.downloadAppUpdate();
       setAppUpdateStatus(status);
       toast.success("Downloading the latest update in the background.");
@@ -300,6 +326,16 @@ export function PreferencesSurface({ className }: { className?: string }) {
     }
 
     await withBusy(async () => {
+      setAppUpdateStatus((current) =>
+        current
+          ? {
+              ...current,
+              applying: true,
+              error: null,
+              lastStatusMessage: "Installing the downloaded update...",
+            }
+          : current,
+      );
       await rpc.applyAppUpdate();
     });
   }, [rpc, withBusy]);
@@ -493,7 +529,7 @@ export function PreferencesSurface({ className }: { className?: string }) {
                             onClick={() => void handleApplyAppUpdate()}
                             disabled={loading || appUpdateStatus.applying}
                           >
-                            Restart to Update
+                            {appUpdateStatus.applying ? "Restarting..." : "Restart to Update"}
                           </Button>
                         ) : appUpdateStatus?.updateAvailable ? (
                           <Button
