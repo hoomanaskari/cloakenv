@@ -1,5 +1,6 @@
 import type { ElectrobunRPCSchema } from "electrobun/bun";
 import type {
+  AppUpdateStatusInfo,
   AuditEntryInfo,
   CliInstallResultInfo,
   CliInstallStatusInfo,
@@ -19,6 +20,7 @@ import type {
 
 // Re-export for convenience
 export type {
+  AppUpdateStatusInfo,
   ProjectInfo,
   SecretInfo,
   EnvironmentInfo,
@@ -233,9 +235,25 @@ export interface CloakEnvRPCSchema extends ElectrobunRPCSchema {
         params: undefined;
         response: CliInstallStatusInfo;
       };
+      getAppUpdateStatus: {
+        params: undefined;
+        response: AppUpdateStatusInfo;
+      };
       installCliCommand: {
         params: undefined;
         response: CliInstallResultInfo;
+      };
+      checkForAppUpdates: {
+        params: { downloadIfAvailable?: boolean; userInitiated?: boolean } | undefined;
+        response: AppUpdateStatusInfo;
+      };
+      downloadAppUpdate: {
+        params: undefined;
+        response: AppUpdateStatusInfo;
+      };
+      applyAppUpdate: {
+        params: undefined;
+        response: undefined;
       };
       expireProviderSession: {
         params: { sessionId?: string; all?: boolean };

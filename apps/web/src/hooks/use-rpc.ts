@@ -1,5 +1,6 @@
 import type { CloakEnvRPCSchema } from "@shared/rpc-schema";
 import type {
+  AppUpdateStatusInfo,
   AuditEntryInfo,
   CliInstallResultInfo,
   CliInstallStatusInfo,
@@ -28,6 +29,7 @@ import {
 // Re-export types for consumers
 export type { ProjectInfo, SecretInfo, EnvironmentInfo, AuditEntryInfo, EnvFileInfo, ConfigInfo };
 export type {
+  AppUpdateStatusInfo,
   CliInstallResultInfo,
   CliInstallStatusInfo,
   EnvImportResultInfo,
@@ -130,7 +132,14 @@ export interface VaultRPC {
   getConfig(params?: undefined): Promise<ConfigInfo>;
   getProviderDiagnostics(params?: undefined): Promise<ProviderDiagnosticsInfo>;
   getCliInstallStatus(params?: undefined): Promise<CliInstallStatusInfo>;
+  getAppUpdateStatus(params?: undefined): Promise<AppUpdateStatusInfo>;
   installCliCommand(params?: undefined): Promise<CliInstallResultInfo>;
+  checkForAppUpdates(params?: {
+    downloadIfAvailable?: boolean;
+    userInitiated?: boolean;
+  }): Promise<AppUpdateStatusInfo>;
+  downloadAppUpdate(params?: undefined): Promise<AppUpdateStatusInfo>;
+  applyAppUpdate(params?: undefined): Promise<void>;
   expireProviderSession(params: {
     sessionId?: string;
     all?: boolean;

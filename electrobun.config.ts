@@ -1,4 +1,5 @@
 import type { ElectrobunConfig } from "electrobun/bun";
+import packageJson from "./package.json";
 
 const shouldCodeSign = Boolean(process.env.ELECTROBUN_DEVELOPER_ID);
 const shouldNotarize =
@@ -6,12 +7,13 @@ const shouldNotarize =
   Boolean(process.env.ELECTROBUN_APPLEID) &&
   Boolean(process.env.ELECTROBUN_APPLEIDPASS) &&
   Boolean(process.env.ELECTROBUN_TEAMID);
+const releaseBaseUrl = process.env.CLOAKENV_RELEASE_BASE_URL?.trim() ?? "";
 
 const config: ElectrobunConfig = {
   app: {
     name: "CloakEnv",
     identifier: "com.cloakenv.vault",
-    version: "0.1.0",
+    version: packageJson.version,
     description: "Your secrets, invisible to AI. Encrypted local vault for developer secrets.",
   },
 
@@ -51,7 +53,8 @@ const config: ElectrobunConfig = {
   },
 
   release: {
-    generatePatch: false,
+    baseUrl: releaseBaseUrl,
+    generatePatch: true,
   },
 
   runtime: {

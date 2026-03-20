@@ -154,6 +154,27 @@ export interface CliInstallResultInfo {
   requiresRestart: boolean;
 }
 
+export interface AppUpdateStatusInfo {
+  supported: boolean;
+  configured: boolean;
+  checking: boolean;
+  downloading: boolean;
+  applying: boolean;
+  updateAvailable: boolean;
+  updateReady: boolean;
+  currentVersion: string | null;
+  currentHash: string | null;
+  latestVersion: string | null;
+  latestHash: string | null;
+  channel: string | null;
+  baseUrl: string | null;
+  unavailableReason: string | null;
+  lastCheckedAt: number | null;
+  lastStatusType: string | null;
+  lastStatusMessage: string | null;
+  error: string | null;
+}
+
 export interface RestoredEnvFileInfo {
   scope: string;
   fileName: string;

@@ -85,6 +85,31 @@ bun run release:build
 
 Artifacts are written to `artifacts/`.
 
+## GitHub Releases
+
+CloakEnv publishes desktop installers, updater feeds, and standalone CLI binaries through GitHub Releases.
+
+Release rules:
+
+- the source of truth is the root [`package.json`](./package.json) version
+- a Git tag must match that version in `vX.Y.Z` form
+- packaged builds published by CI point their updater at:
+  `https://github.com/<owner>/<repo>/releases/latest/download`
+
+To cut the first stable release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The release workflow will:
+
+- validate that the pushed tag matches `package.json`
+- build macOS, Linux, and Windows release artifacts
+- upload them to a GitHub Release named after the tag
+- publish stable updater assets that the in-app updater can fetch from the latest release
+
 All CLI examples below assume `cloakenv` is available in your shell. If you are running from a source checkout and have not installed the CLI into your `PATH` yet, replace:
 
 ```bash

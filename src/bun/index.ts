@@ -1,6 +1,7 @@
 import type { Server } from "node:net";
 import { ApplicationMenu, BrowserView, BrowserWindow, Tray, Utils } from "electrobun/bun";
 import type { CloakEnvRPCSchema } from "../shared/rpc-schema";
+import { createAppUpdater } from "./app-updater";
 import { startProviderServer, stopProviderServer } from "./approval-broker";
 import { getCliInstallStatus, installCliCommand, syncInstalledCliCommand } from "./cli-command";
 import { createVaultHandlers } from "./handlers";
@@ -63,6 +64,7 @@ function sendMainWindowMenuMessage(message: MainWindowMenuMessage): void {
 function buildTrayMenu() {
   return [
     { type: "normal", label: "Open CloakEnv", action: "open" },
+    { type: "normal", label: "Check for Updates...", action: "check-for-updates" },
     { type: "normal", label: "New Project...", action: "new-project" },
     { type: "normal", label: "Tools", action: "tools" },
     { type: "normal", label: "Request Trace", action: "traces" },
@@ -152,6 +154,9 @@ async function requestNativeApproval(params: {
 // ── Initialize vault handlers ─────────────────────────────────────────
 const handlers = createVaultHandlers({
   requestNativeApproval,
+  showNativeNotification: Utils.showNotification,
+});
+const appUpdater = createAppUpdater({
   showNativeNotification: Utils.showNotification,
 });
 
@@ -357,8 +362,27 @@ const rpc = BrowserView.defineRPC<CloakEnvRPCSchema>({
       async getCliInstallStatus() {
         return getCliInstallStatus();
       },
+      async getAppUpdateStatus() {
+        return appUpdater.getStatus();
+      },
       async installCliCommand() {
         return installCliCommand();
+      },
+      async checkForAppUpdates(params?: {
+        downloadIfAvailable?: boolean;
+        userInitiated?: boolean;
+      }) {
+        return appUpdater.checkForUpdates({
+          downloadIfAvailable: params?.downloadIfAvailable,
+          userInitiated: params?.userInitiated,
+        });
+      },
+      async downloadAppUpdate() {
+        return appUpdater.downloadUpdate();
+      },
+      async applyAppUpdate() {
+        await appUpdater.applyUpdate();
+        return undefined;
       },
       async expireProviderSession(params: { sessionId?: string; all?: boolean }) {
         return handlers.expireProviderSession(params);
@@ -698,6 +722,14 @@ function createTray(): Tray {
       return;
     }
 
+    if (action === "check-for-updates") {
+      void appUpdater.checkForUpdates({
+        downloadIfAvailable: false,
+        userInitiated: true,
+      });
+      return;
+    }
+
     if (action === "preferences") {
       sendMainWindowMenuMessage("openPreferences");
       return;
@@ -816,6 +848,7 @@ try {
 mainWindow = createMainWindow();
 applyDesktopPresentation(currentDesktopAppearance);
 startMacWindowRestoreMonitor();
+appUpdater.scheduleBackgroundCheck();
 
 providerServer = startProviderServer(handlers);
 
@@ -825,6 +858,8 @@ ApplicationMenu.setApplicationMenu([
     label: "CloakEnv",
     submenu: [
       { label: "About CloakEnv", enabled: false },
+      { type: "separator" },
+      { label: "Check for Updates...", action: "check-for-updates" },
       { type: "separator" },
       { label: "Preferences...", accelerator: "Command+,", action: "open-preferences" },
       { type: "separator" },
@@ -883,6 +918,11 @@ ApplicationMenu.on("application-menu-clicked", (event: unknown) => {
     getFocusedWindow()?.webview.toggleDevTools();
   } else if (action === "reload-main-window") {
     reloadFocusedDesktopWindow();
+  } else if (action === "check-for-updates") {
+    void appUpdater.checkForUpdates({
+      downloadIfAvailable: false,
+      userInitiated: true,
+    });
   } else if (action === "open-preferences") {
     sendMainWindowMenuMessage("openPreferences");
   } else if (action === "close-main-window") {

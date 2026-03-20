@@ -1,9 +1,11 @@
-import type { ConfigInfo } from "@shared/types";
+import type { AppUpdateStatusInfo, ConfigInfo } from "@shared/types";
 import {
   Archive,
+  Download,
   FolderOpen,
   KeyRound,
   MonitorSmartphone,
+  RefreshCw,
   Shield,
   TerminalSquare,
 } from "lucide-react";
@@ -55,6 +57,7 @@ export function PreferencesSurface({ className }: { className?: string }) {
   const [config, setConfig] = useState<ConfigInfo>(INITIAL_CONFIG);
   const [loading, setLoading] = useState(false);
   const [cliInstallStatus, setCliInstallStatus] = useState<CliInstallStatusInfo | null>(null);
+  const [appUpdateStatus, setAppUpdateStatus] = useState<AppUpdateStatusInfo | null>(null);
   const [backupPassphrase, setBackupPassphrase] = useState("");
   const [backupPassphraseConfirmation, setBackupPassphraseConfirmation] = useState("");
   const [showBackupPassphrase, setShowBackupPassphrase] = useState(false);
@@ -81,13 +84,37 @@ export function PreferencesSurface({ className }: { className?: string }) {
     setCliInstallStatus(await rpc.getCliInstallStatus());
   }, [rpc]);
 
+  const loadAppUpdateStatus = useCallback(async () => {
+    if (!rpc) {
+      return;
+    }
+
+    setAppUpdateStatus(await rpc.getAppUpdateStatus());
+  }, [rpc]);
+
   useEffect(() => {
     if (!rpc) {
       return;
     }
 
-    void Promise.all([loadConfig(), loadCliInstallStatus()]);
-  }, [rpc, loadCliInstallStatus, loadConfig]);
+    void Promise.all([loadConfig(), loadCliInstallStatus(), loadAppUpdateStatus()]);
+  }, [rpc, loadAppUpdateStatus, loadCliInstallStatus, loadConfig]);
+
+  useEffect(() => {
+    if (
+      !rpc ||
+      !appUpdateStatus ||
+      (!appUpdateStatus.checking && !appUpdateStatus.downloading && !appUpdateStatus.applying)
+    ) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      void loadAppUpdateStatus();
+    }, 1_000);
+
+    return () => clearInterval(timer);
+  }, [appUpdateStatus, loadAppUpdateStatus, rpc]);
 
   const withBusy = useCallback(async (task: () => Promise<void>) => {
     try {
@@ -223,6 +250,60 @@ export function PreferencesSurface({ className }: { className?: string }) {
     });
   }, [loadCliInstallStatus, rpc, withBusy]);
 
+  const handleCheckAppUpdates = useCallback(async () => {
+    if (!rpc) {
+      return;
+    }
+
+    await withBusy(async () => {
+      const status = await rpc.checkForAppUpdates({ userInitiated: true });
+      setAppUpdateStatus(status);
+
+      if (status.error) {
+        toast.error(status.error);
+        return;
+      }
+
+      if (status.updateReady) {
+        toast.success("An update is already downloaded and ready to install.");
+        return;
+      }
+
+      if (status.updateAvailable) {
+        toast.success(
+          status.latestVersion
+            ? `Version ${status.latestVersion} is available to download.`
+            : "A newer version is available to download.",
+        );
+        return;
+      }
+
+      toast.success("CloakEnv is up to date.");
+    });
+  }, [rpc, withBusy]);
+
+  const handleDownloadAppUpdate = useCallback(async () => {
+    if (!rpc) {
+      return;
+    }
+
+    await withBusy(async () => {
+      const status = await rpc.downloadAppUpdate();
+      setAppUpdateStatus(status);
+      toast.success("Downloading the latest update in the background.");
+    });
+  }, [rpc, withBusy]);
+
+  const handleApplyAppUpdate = useCallback(async () => {
+    if (!rpc) {
+      return;
+    }
+
+    await withBusy(async () => {
+      await rpc.applyAppUpdate();
+    });
+  }, [rpc, withBusy]);
+
   const handleSetDesktopAppearance = useCallback(
     async (appearance: "dock_and_menu" | "dock_only" | "menu_only") => {
       if (!rpc || appearance === config.desktopAppearance) {
@@ -337,6 +418,100 @@ export function PreferencesSurface({ className }: { className?: string }) {
                     />
                   </RadioGroup>
                 </div>
+              </SettingsGroup>
+
+              <SettingsGroup
+                title="App Updates"
+                footer="Packaged stable releases can check, download, and install updates in place."
+              >
+                <SettingsRowBlock
+                  label="Updater"
+                  description={formatAppUpdateDescription(appUpdateStatus)}
+                >
+                  <div className="mt-3 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <StatusDot active={Boolean(appUpdateStatus?.supported)}>
+                        {appUpdateStatus?.supported ? "Updater ready" : "Updater unavailable"}
+                      </StatusDot>
+                      <StatusDot active={Boolean(appUpdateStatus?.configured)}>
+                        {appUpdateStatus?.configured
+                          ? "Release feed configured"
+                          : "No release feed"}
+                      </StatusDot>
+                      <StatusDot active={Boolean(appUpdateStatus?.updateReady)}>
+                        {appUpdateStatus?.updateReady
+                          ? "Ready to install"
+                          : appUpdateStatus?.updateAvailable
+                            ? "Update available"
+                            : "No pending update"}
+                      </StatusDot>
+                    </div>
+
+                    <Input
+                      value={formatAppUpdateBuild(appUpdateStatus)}
+                      readOnly
+                      className="h-9 rounded-lg bg-muted/50 font-mono text-[12px]"
+                    />
+
+                    {appUpdateStatus?.lastStatusMessage ? (
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        {appUpdateStatus.lastStatusMessage}
+                      </p>
+                    ) : null}
+
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        {formatAppUpdateFooter(appUpdateStatus)}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="rounded-lg text-[13px]"
+                          onClick={() => void handleCheckAppUpdates()}
+                          disabled={
+                            loading ||
+                            !appUpdateStatus?.supported ||
+                            appUpdateStatus.checking ||
+                            appUpdateStatus.downloading ||
+                            appUpdateStatus.applying
+                          }
+                        >
+                          <RefreshCw
+                            className={cn(
+                              "mr-1.5 size-3.5",
+                              appUpdateStatus?.checking && "animate-spin",
+                            )}
+                          />
+                          Check Now
+                        </Button>
+
+                        {appUpdateStatus?.updateReady ? (
+                          <Button
+                            size="sm"
+                            className="rounded-lg text-[13px]"
+                            onClick={() => void handleApplyAppUpdate()}
+                            disabled={loading || appUpdateStatus.applying}
+                          >
+                            Restart to Update
+                          </Button>
+                        ) : appUpdateStatus?.updateAvailable ? (
+                          <Button
+                            size="sm"
+                            className="rounded-lg text-[13px]"
+                            onClick={() => void handleDownloadAppUpdate()}
+                            disabled={
+                              loading || appUpdateStatus.downloading || appUpdateStatus.applying
+                            }
+                          >
+                            <Download className="mr-1.5 size-3.5" />
+                            {appUpdateStatus.downloading ? "Downloading..." : "Download Update"}
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </SettingsRowBlock>
               </SettingsGroup>
             </>
           ) : null}
@@ -643,6 +818,70 @@ function StatusDot(props: { children: ReactNode; active: boolean }) {
       {props.children}
     </span>
   );
+}
+
+function formatAppUpdateDescription(status: AppUpdateStatusInfo | null): string {
+  if (!status) {
+    return "Checking updater availability...";
+  }
+
+  if (!status.supported) {
+    return status.unavailableReason ?? "Updates are unavailable for this build.";
+  }
+
+  if (status.updateReady) {
+    return "A downloaded update is ready to install.";
+  }
+
+  if (status.downloading) {
+    return "Downloading the latest release now.";
+  }
+
+  if (status.updateAvailable) {
+    return status.latestVersion
+      ? `Version ${status.latestVersion} is available.`
+      : "A newer release is available.";
+  }
+
+  return "Checks the packaged app for newer signed releases.";
+}
+
+function formatAppUpdateBuild(status: AppUpdateStatusInfo | null): string {
+  if (!status) {
+    return "Loading updater metadata...";
+  }
+
+  const parts = [
+    status.currentVersion ? `version=${status.currentVersion}` : null,
+    status.channel ? `channel=${status.channel}` : null,
+    status.currentHash ? `hash=${status.currentHash}` : null,
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join("  ");
+  }
+
+  return status.unavailableReason ?? "Packaged build metadata not available.";
+}
+
+function formatAppUpdateFooter(status: AppUpdateStatusInfo | null): string {
+  if (!status) {
+    return "Loading update status...";
+  }
+
+  if (status.error) {
+    return status.error;
+  }
+
+  if (!status.supported) {
+    return status.unavailableReason ?? "Updates are unavailable for this build.";
+  }
+
+  if (status.lastCheckedAt) {
+    return `Last checked ${new Date(status.lastCheckedAt).toLocaleString()}.`;
+  }
+
+  return "Use Check Now to query the release feed for a newer version.";
 }
 
 function formatDesktopAppearance(value: "dock_and_menu" | "dock_only" | "menu_only"): string {

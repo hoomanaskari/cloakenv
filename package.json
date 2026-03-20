@@ -1,7 +1,7 @@
 {
   "name": "cloakenv",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Your secrets, invisible to AI. An encrypted local vault for developer secrets.",
   "license": "MIT",
   "workspaces": ["packages/*", "apps/*"],
@@ -24,6 +24,7 @@
     "cli:build:standalone:linux-x64": "bun run --filter @cloakenv/cli build:standalone:linux-x64",
     "cli:build:standalone:windows-x64": "bun run --filter @cloakenv/cli build:standalone:windows-x64",
     "release:build": "bun run src/scripts/release-build.ts",
+    "release:assert-tag": "bun run src/scripts/assert-release-tag.ts",
     "release:verify": "bun run src/scripts/verify-release-artifacts.ts",
     "typecheck": "bunx tsc --noEmit",
     "lint": "bunx biome check packages/ apps/ src/",

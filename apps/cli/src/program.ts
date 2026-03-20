@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import packageJson from "../package.json";
 import { registerAuditCommand } from "./commands/audit";
 import { registerConfigCommand } from "./commands/config";
 import { registerExportCommand } from "./commands/export";
@@ -21,7 +22,7 @@ export function createProgram(): Command {
   program
     .name("cloakenv")
     .description("Your secrets, invisible to AI. Encrypted local vault for developer secrets.")
-    .version("0.1.0");
+    .version(packageJson.version);
 
   registerInitCommand(program);
   registerSetCommand(program);

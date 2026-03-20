@@ -1,5 +1,6 @@
 import { copyFileSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import packageJson from "../../package.json";
 
 const projectRoot = process.cwd();
 const artifactDir = join(projectRoot, "artifacts");
@@ -24,9 +25,12 @@ const artifactFiles = listFiles(artifactDir).map((filePath) => ({
 }));
 
 writeFileSync(
-  join(artifactDir, "release-manifest.json"),
+  join(artifactDir, `release-manifest-${process.platform}-${process.arch}.json`),
   JSON.stringify(
     {
+      version: packageJson.version,
+      platform: process.platform,
+      arch: process.arch,
       generatedAt: new Date().toISOString(),
       artifacts: artifactFiles,
     },
