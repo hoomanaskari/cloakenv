@@ -35,6 +35,7 @@ const INITIAL_CONFIG: ConfigInfo = {
   autoBackup: true,
   onboardingCompleted: false,
   autoBackupPassphraseConfigured: false,
+  launchAtLogin: false,
   providerSessionTtlMinutes: 0,
   desktopAppearance: "dock_and_menu",
 };
@@ -355,6 +356,21 @@ export function PreferencesSurface({ className }: { className?: string }) {
     [config.desktopAppearance, loadConfig, rpc, withBusy],
   );
 
+  const handleToggleLaunchAtLogin = useCallback(
+    async (checked: boolean) => {
+      if (!rpc || checked === config.launchAtLogin) {
+        return;
+      }
+
+      await withBusy(async () => {
+        await rpc.setConfig({ key: "launchAtLogin", value: checked ? "true" : "false" });
+        await loadConfig();
+        toast.success(checked ? "CloakEnv will launch at login" : "Launch at login disabled");
+      });
+    },
+    [config.launchAtLogin, loadConfig, rpc, withBusy],
+  );
+
   return (
     <div className={cn("flex min-h-0 flex-1 overflow-hidden", className)}>
       {/* ── Sidebar ── */}
@@ -454,6 +470,22 @@ export function PreferencesSurface({ className }: { className?: string }) {
                     />
                   </RadioGroup>
                 </div>
+              </SettingsGroup>
+
+              <SettingsGroup
+                title="Startup"
+                footer="Uses your account's native startup mechanism on macOS, Windows, and Linux."
+              >
+                <SettingsRow
+                  label="Launch at Login"
+                  description="Automatically open CloakEnv when you sign in on this device."
+                >
+                  <Switch
+                    checked={config.launchAtLogin}
+                    onCheckedChange={(checked) => void handleToggleLaunchAtLogin(checked)}
+                    disabled={loading}
+                  />
+                </SettingsRow>
               </SettingsGroup>
 
               <SettingsGroup

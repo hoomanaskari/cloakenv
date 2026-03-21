@@ -106,17 +106,20 @@ describe("Integration: Init → Set → Get → List → Remove", () => {
     expect(configRepo.get("authMode")).toBe("keychain");
     expect(configRepo.get("autoBackup")).toBe(true);
     expect(configRepo.get("onboardingCompleted")).toBe(false);
+    expect(configRepo.get("launchAtLogin")).toBe(false);
     expect(configRepo.get("providerSessionTtlMinutes")).toBe(0);
     expect(configRepo.get("desktopAppearance")).toBe("dock_and_menu");
 
     // Set values
     configRepo.set("backupPath", "/Users/me/Dropbox/secrets");
     configRepo.set("autoBackup", false);
+    configRepo.set("launchAtLogin", true);
     configRepo.set("providerSessionTtlMinutes", 15);
     configRepo.set("desktopAppearance", "menu_only");
 
     expect(configRepo.get("backupPath")).toBe("/Users/me/Dropbox/secrets");
     expect(configRepo.get("autoBackup")).toBe(false);
+    expect(configRepo.get("launchAtLogin")).toBe(true);
     expect(configRepo.get("providerSessionTtlMinutes")).toBe(15);
     expect(configRepo.get("desktopAppearance")).toBe("menu_only");
 
@@ -126,6 +129,7 @@ describe("Integration: Init → Set → Get → List → Remove", () => {
     expect(all.authMode).toBe("keychain");
     expect(all.autoBackup).toBe(false);
     expect(all.onboardingCompleted).toBe(false);
+    expect(all.launchAtLogin).toBe(true);
     expect(all.providerSessionTtlMinutes).toBe(15);
     expect(all.desktopAppearance).toBe("menu_only");
   });

@@ -12,6 +12,7 @@ const DEFAULTS: CloakEnvConfig = {
   authMode: "keychain",
   autoBackup: true,
   onboardingCompleted: false,
+  launchAtLogin: false,
   providerSessionTtlMinutes: 0,
   desktopAppearance: "dock_and_menu",
 };
@@ -21,6 +22,7 @@ const KEY_MAP: Record<keyof CloakEnvConfig, string> = {
   authMode: "auth_mode",
   autoBackup: "auto_backup",
   onboardingCompleted: "onboarding_completed",
+  launchAtLogin: "launch_at_login",
   providerSessionTtlMinutes: "provider_session_ttl_minutes",
   desktopAppearance: "desktop_appearance",
 };
@@ -55,6 +57,7 @@ export class ConfigRepository {
       authMode: this.get("authMode"),
       autoBackup: this.get("autoBackup"),
       onboardingCompleted: this.get("onboardingCompleted"),
+      launchAtLogin: this.get("launchAtLogin"),
       providerSessionTtlMinutes: this.get("providerSessionTtlMinutes"),
       desktopAppearance: this.get("desktopAppearance"),
     };
@@ -70,6 +73,7 @@ export class ConfigRepository {
     switch (key) {
       case "autoBackup":
       case "onboardingCompleted":
+      case "launchAtLogin":
         return (raw === "true") as CloakEnvConfig[K];
       case "backupPath":
         return (raw === "" ? null : raw) as CloakEnvConfig[K];
@@ -78,7 +82,7 @@ export class ConfigRepository {
       case "providerSessionTtlMinutes":
         return Number.isFinite(Number.parseInt(raw, 10))
           ? (Number.parseInt(raw, 10) as CloakEnvConfig[K])
-          : DEFAULTS.providerSessionTtlMinutes;
+          : (DEFAULTS.providerSessionTtlMinutes as CloakEnvConfig[K]);
       case "desktopAppearance":
         return (
           raw === "dock_only" || raw === "menu_only" ? raw : DEFAULTS.desktopAppearance

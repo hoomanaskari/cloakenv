@@ -28,6 +28,7 @@ const INITIAL_CONFIG: ConfigInfo = {
   autoBackup: true,
   onboardingCompleted: false,
   autoBackupPassphraseConfigured: false,
+  launchAtLogin: false,
   providerSessionTtlMinutes: 0,
   desktopAppearance: "dock_and_menu",
 };

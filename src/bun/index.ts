@@ -1,10 +1,11 @@
 import type { Server } from "node:net";
-import { ApplicationMenu, BrowserView, BrowserWindow, Tray, Utils } from "electrobun/bun";
+import { ApplicationMenu, BrowserView, BrowserWindow, Screen, Tray, Utils } from "electrobun/bun";
 import type { CloakEnvRPCSchema } from "../shared/rpc-schema";
 import { createAppUpdater } from "./app-updater";
 import { startProviderServer, stopProviderServer } from "./approval-broker";
 import { getCliInstallStatus, installCliCommand, syncInstalledCliCommand } from "./cli-command";
 import { createVaultHandlers } from "./handlers";
+import { setLaunchAtLoginEnabled } from "./launch-at-login";
 import {
   activateMacApplication,
   applyMacDesktopAppearance,
@@ -13,6 +14,12 @@ import {
   orderOutMacWindow,
   unhideMacApplication,
 } from "./macos-presentation";
+import {
+  constrainWindowFrameForMove,
+  constrainWindowFrameForOpen,
+  constrainWindowFrameForResize,
+  framesEqual,
+} from "./window-frame";
 import { loadMainWindowFrame, saveMainWindowFrame, type WindowFrameState } from "./window-state";
 
 let mainWindow: BrowserWindow | null = null;
@@ -418,6 +425,9 @@ const rpc = BrowserView.defineRPC<CloakEnvRPCSchema>({
         return handlers.expireProviderSession(params);
       },
       async setConfig(params: { key: string; value: string }) {
+        if (params.key === "launchAtLogin") {
+          setLaunchAtLoginEnabled(params.value === "true");
+        }
         handlers.setConfig(params.key, params.value);
         if (params.key === "desktopAppearance") {
           applyDesktopPresentation(
@@ -476,23 +486,44 @@ const DEFAULT_MAIN_WINDOW_FRAME: WindowFrameState = {
   height: 750,
 };
 
-function normalizeMainWindowFrame(frame: WindowFrameState): WindowFrameState {
-  return {
-    x: Math.round(frame.x),
-    y: Math.round(frame.y),
-    width: Math.max(Math.round(frame.width), MAIN_WINDOW_MIN_WIDTH),
-    height: Math.max(Math.round(frame.height), MAIN_WINDOW_MIN_HEIGHT),
-  };
+function getAvailableDisplays() {
+  const displays = Screen.getAllDisplays();
+  if (displays.length > 0) {
+    return displays;
+  }
+
+  return [Screen.getPrimaryDisplay()];
 }
 
-const initialMainWindowFrame = normalizeMainWindowFrame(
+function constrainMainWindowFrameForOpen(frame: WindowFrameState): WindowFrameState {
+  return constrainWindowFrameForOpen(frame, getAvailableDisplays(), {
+    minWidth: MAIN_WINDOW_MIN_WIDTH,
+    minHeight: MAIN_WINDOW_MIN_HEIGHT,
+  });
+}
+
+function constrainMainWindowFrameForResize(frame: WindowFrameState): WindowFrameState {
+  return constrainWindowFrameForResize(frame, getAvailableDisplays(), {
+    minWidth: MAIN_WINDOW_MIN_WIDTH,
+    minHeight: MAIN_WINDOW_MIN_HEIGHT,
+  });
+}
+
+function constrainMainWindowFrameForMove(frame: WindowFrameState): WindowFrameState {
+  return constrainWindowFrameForMove(frame, getAvailableDisplays(), {
+    minWidth: MAIN_WINDOW_MIN_WIDTH,
+    minHeight: MAIN_WINDOW_MIN_HEIGHT,
+  });
+}
+
+const initialMainWindowFrame = constrainMainWindowFrameForOpen(
   loadMainWindowFrame() ?? DEFAULT_MAIN_WINDOW_FRAME,
 );
 let lastKnownMainWindowFrame = initialMainWindowFrame;
 let persistMainWindowFrameTimer: ReturnType<typeof setTimeout> | null = null;
 
 function scheduleMainWindowFrameSave(frame: WindowFrameState): void {
-  lastKnownMainWindowFrame = normalizeMainWindowFrame(frame);
+  lastKnownMainWindowFrame = frame;
 
   if (persistMainWindowFrameTimer) {
     clearTimeout(persistMainWindowFrameTimer);
@@ -566,10 +597,10 @@ function createMainWindow(): BrowserWindow {
     transparent: process.platform === "darwin",
   });
 
-  let isClampingMainWindowSize = false;
+  let isReconcilingMainWindowFrame = false;
 
   window.on("resize", (event) => {
-    if (isClampingMainWindowSize) {
+    if (isReconcilingMainWindowFrame) {
       return;
     }
 
@@ -579,32 +610,49 @@ function createMainWindow(): BrowserWindow {
       }
     ).data;
 
-    const clampedWidth = Math.max(width, MAIN_WINDOW_MIN_WIDTH);
-    const clampedHeight = Math.max(height, MAIN_WINDOW_MIN_HEIGHT);
-    const nextFrame = { x, y, width: clampedWidth, height: clampedHeight };
+    const nextFrame = constrainMainWindowFrameForResize({ x, y, width, height });
 
     scheduleMainWindowFrameSave(nextFrame);
 
-    if (clampedWidth === width && clampedHeight === height) {
+    if (framesEqual(nextFrame, { x, y, width, height })) {
       return;
     }
 
-    isClampingMainWindowSize = true;
+    isReconcilingMainWindowFrame = true;
 
     try {
-      window.setFrame(x, y, clampedWidth, clampedHeight);
+      window.setFrame(nextFrame.x, nextFrame.y, nextFrame.width, nextFrame.height);
     } finally {
-      isClampingMainWindowSize = false;
+      isReconcilingMainWindowFrame = false;
     }
   });
 
   window.on("move", (event) => {
+    if (isReconcilingMainWindowFrame) {
+      return;
+    }
+
     const { x, y } = (event as { data: { x: number; y: number } }).data;
-    scheduleMainWindowFrameSave({
-      ...lastKnownMainWindowFrame,
+    const currentFrame = window.getFrame();
+    const nextFrame = constrainMainWindowFrameForMove({
+      ...currentFrame,
       x,
       y,
     });
+
+    scheduleMainWindowFrameSave(nextFrame);
+
+    if (framesEqual(nextFrame, currentFrame)) {
+      return;
+    }
+
+    isReconcilingMainWindowFrame = true;
+
+    try {
+      window.setFrame(nextFrame.x, nextFrame.y, nextFrame.width, nextFrame.height);
+    } finally {
+      isReconcilingMainWindowFrame = false;
+    }
   });
 
   window.on("keyDown", (event) => {
@@ -657,6 +705,14 @@ function getFocusedWindow(): BrowserWindow | null {
 
 function showMainWindow(): BrowserWindow {
   const window = ensureMainWindow();
+  const currentFrame = window.getFrame();
+  const clampedFrame = constrainMainWindowFrameForOpen(currentFrame);
+
+  if (!framesEqual(currentFrame, clampedFrame)) {
+    window.setFrame(clampedFrame.x, clampedFrame.y, clampedFrame.width, clampedFrame.height);
+    scheduleMainWindowFrameSave(clampedFrame);
+  }
+
   shouldRestoreMainWindowOnActivate = false;
   suppressMainWindowRestoreUntilBlur = false;
   unhideMacApplication();
@@ -712,7 +768,7 @@ function toggleDesktopWindowMaximize(): void {
 
 function reloadFocusedDesktopWindow(): void {
   const existingWindow = ensureMainWindow();
-  const nextFrame = normalizeMainWindowFrame(existingWindow.getFrame());
+  const nextFrame = constrainMainWindowFrameForOpen(existingWindow.getFrame());
 
   lastKnownMainWindowFrame = nextFrame;
   flushMainWindowFrameSave();
@@ -871,6 +927,12 @@ function startMacWindowRestoreMonitor(): void {
 
 const initialConfig = await handlers.getConfig();
 currentDesktopAppearance = initialConfig.desktopAppearance;
+
+try {
+  setLaunchAtLoginEnabled(initialConfig.launchAtLogin);
+} catch (error) {
+  console.warn("[CloakEnv] Failed to synchronize launch-at-login:", error);
+}
 
 try {
   const cliSync = syncInstalledCliCommand();

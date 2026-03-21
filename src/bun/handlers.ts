@@ -1924,6 +1924,8 @@ export function createVaultHandlers(options: VaultHandlerOptions) {
       else if (key === "autoBackup") configRepo.set("autoBackup", value === "true");
       else if (key === "onboardingCompleted") {
         configRepo.set("onboardingCompleted", value === "true");
+      } else if (key === "launchAtLogin") {
+        configRepo.set("launchAtLogin", value === "true");
       } else if (key === "providerSessionTtlMinutes") {
         const parsed = Number.parseInt(value, 10);
         const nextTtlMinutes = Number.isFinite(parsed) ? Math.max(parsed, 0) : 0;

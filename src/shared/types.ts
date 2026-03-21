@@ -124,6 +124,7 @@ export interface ConfigInfo {
   autoBackup: boolean;
   onboardingCompleted: boolean;
   autoBackupPassphraseConfigured: boolean;
+  launchAtLogin: boolean;
   providerSessionTtlMinutes: number;
   desktopAppearance: "dock_and_menu" | "dock_only" | "menu_only";
 }

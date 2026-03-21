@@ -3,6 +3,7 @@ export interface CloakEnvConfig {
   authMode: "keychain" | "passphrase";
   autoBackup: boolean;
   onboardingCompleted: boolean;
+  launchAtLogin: boolean;
   providerSessionTtlMinutes: number;
   desktopAppearance: "dock_and_menu" | "dock_only" | "menu_only";
 }

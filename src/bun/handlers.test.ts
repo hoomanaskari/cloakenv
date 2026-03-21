@@ -125,13 +125,16 @@ describe("desktop handlers", () => {
     const initialConfig = await handlers.getConfig();
     expect(initialConfig.desktopAppearance).toBe("dock_and_menu");
     expect(initialConfig.onboardingCompleted).toBe(false);
+    expect(initialConfig.launchAtLogin).toBe(false);
 
     handlers.setConfig("desktopAppearance", "menu_only");
     handlers.setConfig("onboardingCompleted", "true");
+    handlers.setConfig("launchAtLogin", "true");
 
     const updatedConfig = await handlers.getConfig();
     expect(updatedConfig.desktopAppearance).toBe("menu_only");
     expect(updatedConfig.onboardingCompleted).toBe(true);
+    expect(updatedConfig.launchAtLogin).toBe(true);
   });
 
   test("revealSecret requires approval by default", async () => {
