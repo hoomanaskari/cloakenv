@@ -1,7 +1,7 @@
 {
   "name": "cloakenv",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Your secrets, invisible to AI. An encrypted local vault for developer secrets.",
   "license": "MIT",
   "workspaces": ["packages/*", "apps/*"],

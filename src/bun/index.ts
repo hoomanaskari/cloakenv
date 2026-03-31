@@ -634,6 +634,9 @@ function createMainWindow(): BrowserWindow {
 
     const { x, y } = (event as { data: { x: number; y: number } }).data;
     const currentFrame = window.getFrame();
+    // Do not call setFrame during a live drag. When the window crosses between
+    // displays, forcing a corrected frame here can fight the native window
+    // manager and create an oscillating move loop.
     const nextFrame = constrainMainWindowFrameForMove({
       ...currentFrame,
       x,
@@ -641,18 +644,6 @@ function createMainWindow(): BrowserWindow {
     });
 
     scheduleMainWindowFrameSave(nextFrame);
-
-    if (framesEqual(nextFrame, currentFrame)) {
-      return;
-    }
-
-    isReconcilingMainWindowFrame = true;
-
-    try {
-      window.setFrame(nextFrame.x, nextFrame.y, nextFrame.width, nextFrame.height);
-    } finally {
-      isReconcilingMainWindowFrame = false;
-    }
   });
 
   window.on("keyDown", (event) => {
