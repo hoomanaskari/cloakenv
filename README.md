@@ -101,8 +101,8 @@ Release rules:
 To cut the first stable release:
 
 ```bash
-git tag v1.0.5
-git push origin v1.0.5
+git tag v1.0.6
+git push origin v1.0.6
 ```
 
 The release workflow will:
@@ -123,7 +123,7 @@ bun run build:installers
 upload the local macOS artifacts to the tag release with:
 
 ```bash
-bun run release:upload:macos -- v1.0.5
+bun run release:upload:macos -- v1.0.6
 ```
 
 That command uploads the macOS `.dmg`, updater files, standalone CLI, manifest, and any generated macOS patch file from `artifacts/` to the existing GitHub release. It will refuse to upload if the packaged app does not contain an updater release feed URL.

@@ -1,20 +1,24 @@
 import { copyFileSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import packageJson from "../../package.json";
-import { resolveReleaseBaseUrl } from "./release-utils";
+import { createReleaseBuildEnvironment, resolveReleaseBaseUrl } from "./release-utils";
 
 const projectRoot = process.cwd();
 const artifactDir = join(projectRoot, "artifacts");
 const cliReleaseDir = join(projectRoot, "apps", "cli", "dist", "release");
 const currentCliArtifact = join(cliReleaseDir, getCurrentCliArtifactFileName());
 const releaseBaseUrl = resolveReleaseBaseUrl(projectRoot);
+const releaseBuildEnvironment = createReleaseBuildEnvironment(projectRoot);
 
 console.log(`[cloakenv] using release feed ${releaseBaseUrl}`);
+for (const line of releaseBuildEnvironment.macSigningSummary) {
+  console.log(`[cloakenv] ${line}`);
+}
 
 const buildResult = Bun.spawnSync([process.execPath, "run", "build:prod"], {
   cwd: projectRoot,
   env: {
-    ...process.env,
+    ...releaseBuildEnvironment.env,
     CLOAKENV_RELEASE_BASE_URL: releaseBaseUrl,
   },
   stdio: ["ignore", "inherit", "inherit"],

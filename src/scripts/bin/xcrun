@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -euo pipefail
+
+REAL_XCRUN="/usr/bin/xcrun"
+
+if [[ "${1-}" != "notarytool" || -z "${ELECTROBUN_NOTARY_PROFILE-}" ]]; then
+  exec "$REAL_XCRUN" "$@"
+fi
+
+if [[ $# -lt 2 ]]; then
+  exec "$REAL_XCRUN" "$@"
+fi
+
+subcommand="$2"
+shift 2
+
+args=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --apple-id|--password|--team-id)
+      shift
+      if [[ $# -gt 0 ]]; then
+        shift
+      fi
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+exec "$REAL_XCRUN" notarytool "$subcommand" --keychain-profile "$ELECTROBUN_NOTARY_PROFILE" "${args[@]}"

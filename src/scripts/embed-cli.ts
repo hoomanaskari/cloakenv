@@ -1,4 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
 const targetOs = requireEnv("ELECTROBUN_OS");
@@ -13,6 +14,7 @@ const bundledCliRuntimeFileName = targetOs === "win" ? "cloakenv.exe" : "cloaken
 const projectRoot = process.cwd();
 const releaseDir = join(projectRoot, "apps", "cli", "dist", "release");
 const builtCliPath = join(releaseDir, cliFileName);
+const developerIdIdentity = process.env.ELECTROBUN_DEVELOPER_ID?.trim() ?? "";
 mkdirSync(releaseDir, { recursive: true });
 
 console.log(`[cloakenv] building bundled CLI for ${targetOs}-${targetArch} (${cliTarget})`);
@@ -36,6 +38,29 @@ const buildResult = Bun.spawnSync(
 
 if (!buildResult.success) {
   process.exit(buildResult.exitCode ?? 1);
+}
+
+if (targetOs === "macos" && developerIdIdentity) {
+  console.log(`[cloakenv] signing bundled CLI with ${developerIdIdentity}`);
+  execFileSync(
+    "codesign",
+    [
+      "--force",
+      "--verbose",
+      "--timestamp",
+      "--options",
+      "runtime",
+      "--identifier",
+      "com.cloakenv.vault.cloakenv-cli",
+      "--sign",
+      developerIdIdentity,
+      builtCliPath,
+    ],
+    {
+      cwd: projectRoot,
+      stdio: ["ignore", "inherit", "inherit"],
+    },
+  );
 }
 
 for (const bundlePath of getCandidateBundlePaths()) {

@@ -2,11 +2,13 @@ import type { ElectrobunConfig } from "electrobun/bun";
 import packageJson from "./package.json";
 
 const shouldCodeSign = Boolean(process.env.ELECTROBUN_DEVELOPER_ID);
+const shouldUseNotaryProfile = Boolean(process.env.ELECTROBUN_NOTARY_PROFILE?.trim());
 const shouldNotarize =
   shouldCodeSign &&
-  Boolean(process.env.ELECTROBUN_APPLEID) &&
-  Boolean(process.env.ELECTROBUN_APPLEIDPASS) &&
-  Boolean(process.env.ELECTROBUN_TEAMID);
+  (shouldUseNotaryProfile ||
+    (Boolean(process.env.ELECTROBUN_APPLEID) &&
+      Boolean(process.env.ELECTROBUN_APPLEIDPASS) &&
+      Boolean(process.env.ELECTROBUN_TEAMID)));
 const releaseBaseUrl = process.env.CLOAKENV_RELEASE_BASE_URL?.trim() ?? "";
 
 const config: ElectrobunConfig = {

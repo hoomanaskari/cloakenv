@@ -3,6 +3,11 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+interface ReleaseBuildEnvironment {
+  env: NodeJS.ProcessEnv;
+  macSigningSummary: string[];
+}
+
 interface PackagedVersionInfo {
   version: string;
   hash: string;
@@ -29,6 +34,41 @@ export function resolveReleaseBaseUrl(projectRoot: string): string {
   }
 
   return `https://github.com/${repository}/releases/latest/download`;
+}
+
+export function createReleaseBuildEnvironment(projectRoot: string): ReleaseBuildEnvironment {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+  };
+  const macSigningSummary: string[] = [];
+
+  if (process.platform !== "darwin") {
+    return { env, macSigningSummary };
+  }
+
+  const signingIdentity = process.env.CLOAKENV_MACOS_SIGN_IDENTITY?.trim();
+  if (!signingIdentity) {
+    return { env, macSigningSummary };
+  }
+
+  env.ELECTROBUN_DEVELOPER_ID = signingIdentity;
+  macSigningSummary.push(`signing enabled for ${signingIdentity}`);
+
+  const notaryProfile = process.env.CLOAKENV_MACOS_NOTARY_PROFILE?.trim();
+  if (!notaryProfile) {
+    return { env, macSigningSummary };
+  }
+
+  env.ELECTROBUN_NOTARY_PROFILE = notaryProfile;
+  env.ELECTROBUN_APPLEID = process.env.CLOAKENV_MACOS_NOTARY_APPLE_ID?.trim() || "keychain-profile@local.invalid";
+  env.ELECTROBUN_APPLEIDPASS = process.env.CLOAKENV_MACOS_NOTARY_PASSWORD?.trim() || "__KEYCHAIN_PROFILE__";
+  env.ELECTROBUN_TEAMID = process.env.CLOAKENV_MACOS_TEAM_ID?.trim() || "unknown-team";
+  env.PATH = [join(projectRoot, "src", "scripts", "bin"), process.env.PATH ?? ""]
+    .filter(Boolean)
+    .join(":");
+  macSigningSummary.push(`notarization enabled with keychain profile ${notaryProfile}`);
+
+  return { env, macSigningSummary };
 }
 
 export function readMacArtifactVersionInfo(artifactsDir: string): PackagedVersionInfo {
