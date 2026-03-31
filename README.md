@@ -93,8 +93,10 @@ Release rules:
 
 - the source of truth is the root [`package.json`](./package.json) version
 - a Git tag must match that version in `vX.Y.Z` form
-- packaged builds published by CI point their updater at:
+- stable release builds point their updater at:
   `https://github.com/<owner>/<repo>/releases/latest/download`
+- `bun run release:build` derives that feed automatically from the `origin` Git remote
+- set `CLOAKENV_RELEASE_BASE_URL` explicitly if you need a different release feed
 
 To cut the first stable release:
 
@@ -124,7 +126,7 @@ upload the local macOS artifacts to the tag release with:
 bun run release:upload:macos -- v1.0.5
 ```
 
-That command uploads the macOS `.dmg`, updater files, standalone CLI, manifest, and any generated macOS patch file from `artifacts/` to the existing GitHub release.
+That command uploads the macOS `.dmg`, updater files, standalone CLI, manifest, and any generated macOS patch file from `artifacts/` to the existing GitHub release. It will refuse to upload if the packaged app does not contain an updater release feed URL.
 
 All CLI examples below assume `cloakenv` is available in your shell. If you are running from a source checkout and have not installed the CLI into your `PATH` yet, replace:
 

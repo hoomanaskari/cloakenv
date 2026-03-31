@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import packageJson from "../../package.json";
+import { readMacArtifactVersionInfo } from "./release-utils";
 
 const projectRoot = process.cwd();
 const artifactsDir = join(projectRoot, "artifacts");
@@ -43,6 +44,14 @@ const filesToUpload = [...requiredArtifacts, ...macPatchArtifacts].map((fileName
   join(artifactsDir, fileName),
 );
 
+const versionInfo = readMacArtifactVersionInfo(artifactsDir);
+if (!versionInfo.baseUrl.trim()) {
+  console.error("[cloakenv] packaged macOS build is missing an updater release feed URL.");
+  console.error("[cloakenv] rebuild with `bun run release:build` or set CLOAKENV_RELEASE_BASE_URL.");
+  process.exit(1);
+}
+
+console.log(`[cloakenv] verified macOS updater feed ${versionInfo.baseUrl}`);
 console.log(`[cloakenv] uploading ${filesToUpload.length} macOS release artifact(s) to ${tag}`);
 
 const uploadResult = Bun.spawnSync(["gh", "release", "upload", tag, ...filesToUpload, "--clobber"], {
