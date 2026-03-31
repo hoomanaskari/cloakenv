@@ -112,12 +112,17 @@ The release workflow will:
 
 For tagged macOS releases, GitHub Actions must also have these repository secrets configured:
 
-- `ELECTROBUN_DEVELOPER_ID`
+- `APPLE_DEVELOPER_ID_P12_BASE64`
+- `APPLE_DEVELOPER_ID_P12_PASSWORD`
 - `ELECTROBUN_APPLEID`
 - `ELECTROBUN_APPLEIDPASS`
 - `ELECTROBUN_TEAMID`
 
+The macOS workflow imports the Developer ID Application certificate from the `.p12` secret, signs the app, notarizes it, validates the stapled ticket, and only then uploads the release assets.
+
 If any of those are missing, the macOS release job now fails before publishing so GitHub Releases cannot ship an unsigned or unnotarized `.app` or `.dmg`.
+
+To prepare the certificate secret locally, export the `Developer ID Application` certificate as a `.p12`, base64-encode it, and store the encoded value in `APPLE_DEVELOPER_ID_P12_BASE64`. Store the `.p12` export password in `APPLE_DEVELOPER_ID_P12_PASSWORD`.
 
 All CLI examples below assume `cloakenv` is available in your shell. If you are running from a source checkout and have not installed the CLI into your `PATH` yet, replace:
 

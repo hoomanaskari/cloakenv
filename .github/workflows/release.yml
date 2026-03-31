@@ -57,14 +57,15 @@ jobs:
         if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/')
         shell: bash
         env:
-          ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
+          APPLE_DEVELOPER_ID_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_P12_BASE64 }}
+          APPLE_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
           ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
           ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
           ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
         run: |
           missing=0
 
-          for name in ELECTROBUN_DEVELOPER_ID ELECTROBUN_APPLEID ELECTROBUN_APPLEIDPASS ELECTROBUN_TEAMID; do
+          for name in APPLE_DEVELOPER_ID_P12_BASE64 APPLE_DEVELOPER_ID_P12_PASSWORD ELECTROBUN_APPLEID ELECTROBUN_APPLEIDPASS ELECTROBUN_TEAMID; do
             if [ -z "${!name}" ]; then
               echo "::error title=Missing macOS signing secret::$name is required for a notarized macOS release."
               missing=1
@@ -76,23 +77,57 @@ jobs:
             exit 1
           fi
 
+      - name: Import macOS signing certificate
+        if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          APPLE_DEVELOPER_ID_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_P12_BASE64 }}
+          APPLE_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
+        run: |
+          cert_path="$RUNNER_TEMP/developer-id-application.p12"
+          keychain_path="$RUNNER_TEMP/electrobun-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 24)"
+          login_keychain="$(security login-keychain | tr -d '"')"
+
+          echo "$APPLE_DEVELOPER_ID_P12_BASE64" | base64 --decode > "$cert_path"
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$cert_path" -k "$keychain_path" -P "$APPLE_DEVELOPER_ID_P12_PASSWORD" -f pkcs12 -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain_path"
+          security list-keychains -d user -s "$keychain_path" "$login_keychain"
+          security default-keychain -d user -s "$keychain_path"
+
+          developer_id="$(security find-identity -v -p codesigning "$keychain_path" | sed -n 's/.*\"\\(Developer ID Application:.*\\)\"/\\1/p' | head -n 1)"
+
+          if [ -z "$developer_id" ]; then
+            echo "::error title=Missing Developer ID identity::No 'Developer ID Application' identity was found after importing the certificate."
+            exit 1
+          fi
+
+          echo "ELECTROBUN_DEVELOPER_ID=$developer_id" >> "$GITHUB_ENV"
+          echo "Imported signing identity: $developer_id"
+
       - name: Build release artifacts
         run: bun run release:build
         env:
           CLOAKENV_RELEASE_BASE_URL: https://github.com/${{ github.repository }}/releases/latest/download
-          ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
           ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
           ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
           ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
 
       - name: Verify macOS app signing and notarization
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           app_path="build/stable-macos-arm64/CloakEnv.app"
+          dmg_path="build/stable-macos-arm64/CloakEnv.dmg"
           codesign --verify --deep --strict --verbose=2 "$app_path"
           spctl --assess --type execute --verbose=4 "$app_path"
           xcrun stapler validate "$app_path"
+          spctl --assess --type open --verbose=4 "$dmg_path"
+          xcrun stapler validate "$dmg_path"
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4
