@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import packageJson from "../../package.json";
-import { readMacArtifactVersionInfo } from "./release-utils";
+import { assertMacArtifactsReadyForDistribution, readMacArtifactVersionInfo } from "./release-utils";
 
 const projectRoot = process.cwd();
 const artifactsDir = join(projectRoot, "artifacts");
@@ -48,6 +48,14 @@ const versionInfo = readMacArtifactVersionInfo(artifactsDir);
 if (!versionInfo.baseUrl.trim()) {
   console.error("[cloakenv] packaged macOS build is missing an updater release feed URL.");
   console.error("[cloakenv] rebuild with `bun run release:build` or set CLOAKENV_RELEASE_BASE_URL.");
+  process.exit(1);
+}
+
+try {
+  assertMacArtifactsReadyForDistribution(artifactsDir);
+} catch (error) {
+  console.error("[cloakenv] macOS release artifacts are not ready for public distribution.");
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 }
 

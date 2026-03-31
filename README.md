@@ -128,6 +128,12 @@ bun run release:upload:macos -- v1.0.5
 
 That command uploads the macOS `.dmg`, updater files, standalone CLI, manifest, and any generated macOS patch file from `artifacts/` to the existing GitHub release. It will refuse to upload if the packaged app does not contain an updater release feed URL.
 
+For a public macOS GitHub release, the packaged app also has to pass `syspolicy_check distribution`. In practice that means:
+
+- the bundle must be signed correctly
+- the build must be suitable for distribution, not just local execution
+- the app must have a notarization ticket stapled before upload
+
 All CLI examples below assume `cloakenv` is available in your shell. If you are running from a source checkout and have not installed the CLI into your `PATH` yet, replace:
 
 ```bash
