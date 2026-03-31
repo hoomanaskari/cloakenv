@@ -53,6 +53,29 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: bun run release:assert-tag
 
+      - name: Require macOS signing secrets
+        if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
+          ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
+          ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
+          ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
+        run: |
+          missing=0
+
+          for name in ELECTROBUN_DEVELOPER_ID ELECTROBUN_APPLEID ELECTROBUN_APPLEIDPASS ELECTROBUN_TEAMID; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing macOS signing secret::$name is required for a notarized macOS release."
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Refusing to publish an unsigned macOS release."
+            exit 1
+          fi
+
       - name: Build release artifacts
         run: bun run release:build
         env:
@@ -61,6 +84,15 @@ jobs:
           ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
           ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
           ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
+
+      - name: Verify macOS app signing and notarization
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app_path="build/stable-macos-arm64/CloakEnv.app"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          spctl --assess --type execute --verbose=4 "$app_path"
+          xcrun stapler validate "$app_path"
 
       - name: Upload release bundle
         uses: actions/upload-artifact@v4

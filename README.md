@@ -110,6 +110,15 @@ The release workflow will:
 - upload them to a GitHub Release named after the tag
 - publish stable updater assets that the in-app updater can fetch from the latest release
 
+For tagged macOS releases, GitHub Actions must also have these repository secrets configured:
+
+- `ELECTROBUN_DEVELOPER_ID`
+- `ELECTROBUN_APPLEID`
+- `ELECTROBUN_APPLEIDPASS`
+- `ELECTROBUN_TEAMID`
+
+If any of those are missing, the macOS release job now fails before publishing so GitHub Releases cannot ship an unsigned or unnotarized `.app` or `.dmg`.
+
 All CLI examples below assume `cloakenv` is available in your shell. If you are running from a source checkout and have not installed the CLI into your `PATH` yet, replace:
 
 ```bash
