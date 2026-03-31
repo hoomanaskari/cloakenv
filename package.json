@@ -24,6 +24,7 @@
     "cli:build:standalone:linux-x64": "bun run --filter @cloakenv/cli build:standalone:linux-x64",
     "cli:build:standalone:windows-x64": "bun run --filter @cloakenv/cli build:standalone:windows-x64",
     "release:build": "bun run src/scripts/release-build.ts",
+    "release:upload:macos": "bun run src/scripts/upload-macos-release.ts",
     "release:assert-tag": "bun run src/scripts/assert-release-tag.ts",
     "release:verify": "bun run src/scripts/verify-release-artifacts.ts",
     "typecheck": "bunx tsc --noEmit",

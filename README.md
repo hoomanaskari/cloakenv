@@ -106,23 +106,25 @@ git push origin v1.0.5
 The release workflow will:
 
 - validate that the pushed tag matches `package.json`
-- build macOS, Linux, and Windows release artifacts
+- build Linux and Windows release artifacts
 - upload them to a GitHub Release named after the tag
 - publish stable updater assets that the in-app updater can fetch from the latest release
 
-For tagged macOS releases, GitHub Actions must also have these repository secrets configured:
+macOS release assets are published from a local macOS build so the same `artifacts/` files you validated on your machine are the ones attached to GitHub Releases.
 
-- `APPLE_DEVELOPER_ID_P12_BASE64`
-- `APPLE_DEVELOPER_ID_P12_PASSWORD`
-- `ELECTROBUN_APPLEID`
-- `ELECTROBUN_APPLEIDPASS`
-- `ELECTROBUN_TEAMID`
+After running:
 
-The macOS workflow imports the Developer ID Application certificate from the `.p12` secret, signs the app, notarizes it, validates the stapled ticket, and only then uploads the release assets.
+```bash
+bun run build:installers
+```
 
-If any of those are missing, the macOS release job now fails before publishing so GitHub Releases cannot ship an unsigned or unnotarized `.app` or `.dmg`.
+upload the local macOS artifacts to the tag release with:
 
-To prepare the certificate secret locally, export the `Developer ID Application` certificate as a `.p12`, base64-encode it, and store the encoded value in `APPLE_DEVELOPER_ID_P12_BASE64`. Store the `.p12` export password in `APPLE_DEVELOPER_ID_P12_PASSWORD`.
+```bash
+bun run release:upload:macos -- v1.0.5
+```
+
+That command uploads the macOS `.dmg`, updater files, standalone CLI, manifest, and any generated macOS patch file from `artifacts/` to the existing GitHub release.
 
 All CLI examples below assume `cloakenv` is available in your shell. If you are running from a source checkout and have not installed the CLI into your `PATH` yet, replace:
 
