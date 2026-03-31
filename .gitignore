@@ -44,3 +44,5 @@ build
 
 .claude
 .superset/config.json
+AGENTS.md
+CLAUDE.md
